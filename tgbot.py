@@ -530,7 +530,7 @@ async def addword(event):
     await log_in_chat('addword', fwd_msgs=event.message, username=user_name, userid=sender_id,
         lang=('cn' if is_cn else 'tw'), chatid=chat_id, msgid=event.message.id, words=text)
 
-    # re-tokenize in db
+    # re-tokenize in db and in memory
     msg = await event.respond('✅ 添加成功，将对语料库进行重新分词，可能需要一些时间，完成后将再次发送消息。')
     searchstr = '%'+text+'%'
     cursor.execute("SELECT raw_id FROM raw WHERE raw_text LIKE ?", (searchstr,))
@@ -542,22 +542,30 @@ async def addword(event):
     # find relative lines, which should not contain `text` (or we don't need to tokenize it again)
     ## but after removing whitespaces it should contain `text`
     cursor.execute(f"""
-        SELECT corpus_id, corpus_line FROM corpus
+        SELECT corpus_id, corpus_line, corpus_weight FROM corpus
         WHERE corpus_raw IN ({','.join('?'*len(raw_ids))})
         AND corpus_line NOT LIKE ?
         AND REPLACE(corpus_line, ' ', '') LIKE ?
         """, raw_ids + (searchstr, searchstr))
     rst = cursor.fetchall()
-    [ids, lines] = zip(*rst)
-    if len(ids) > 100 and user_right < USER_RIGHT_LEVEL_ROOT:
-        await event.respond(f'❌ 包含 {text} 的语料超过 100 条 ({len(ids)})，需要 {USER_RIGHT_LEVEL_NAME[USER_RIGHT_LEVEL_ROOT]} 权限者确认重新分词。')
+    [ids, lines, weights] = zip(*rst)
+    if len(ids) > 1000 and user_right < USER_RIGHT_LEVEL_ROOT:
+        await event.respond(f'❌ 包含 {text} 的语料超过 1000 条 ({len(ids)})，需要 {USER_RIGHT_LEVEL_NAME[USER_RIGHT_LEVEL_ROOT]} 权限者确认重新分词。')
         return
-    for cur_id, cur_line in zip(ids, lines):
+    lines_to_erase = []
+    lines_to_feed = []
+    weights_to_erase = []
+    for cur_id, cur_line, cur_weight in zip(ids, lines, weights):
         new_line = ' '.join(model.cut(cur_line.replace(' ', '')))
         if new_line != cur_line:
             cursor.execute("UPDATE corpus SET corpus_line = ? WHERE corpus_id = ?", (new_line, cur_id))
+            lines_to_erase.append(cur_line)
+            lines_to_feed.append(new_line)
+            weights_to_erase.append(-1 * cur_weight)
     conn.commit()
-    await event.respond(f'✅ 已完成重新分词 {len(ids)} 条包含 {text} 的语料。')
+    model.erase(lines_to_erase, weight=weights_to_erase)
+    model.feed(lines_to_feed, weight=[-1*w for w in weights_to_erase])
+    await event.respond(f'✅ 已完成重新分词 {len(lines_to_feed)} 条包含 {text} 的语料。')
 
 @bot.on(events.NewMessage(incoming=True, pattern=r'^/rmword'))
 async def rmword(event):
@@ -592,7 +600,7 @@ async def rmword(event):
 
     await event.respond('🕙 正在写入外部文件并重新加载模型，请稍等。')
 
-    # add word into model
+    # remove word from model
     if not (model.rmword_cn(text) if is_cn else model.rmword_tw(text)):
         await event.respond('❌ 删除失败，该词不存在，或未找到词典文件。')
         return
@@ -601,7 +609,7 @@ async def rmword(event):
     await log_in_chat('rmword', fwd_msgs=event.message, username=user_name, userid=sender_id,
         lang=('cn' if is_cn else 'tw'), chatid=chat_id, msgid=event.message.id, words=text)
 
-    # re-tokenize in db
+    # re-tokenize in db and in memory
     msg = await event.respond('✅ 删除成功，将对语料库进行重新分词，可能需要一些时间，完成后将再次发送消息。')
     searchstr = '%'+text+'%'
     cursor.execute("SELECT raw_id FROM raw WHERE raw_text LIKE ?", (searchstr,))
@@ -612,21 +620,29 @@ async def rmword(event):
         return
     # find relative lines, which should contain `text` apparently
     cursor.execute(f"""
-        SELECT corpus_id, corpus_line FROM corpus
+        SELECT corpus_id, corpus_line, corpus_weight FROM corpus
         WHERE corpus_raw IN ({','.join('?'*len(raw_ids))})
         AND corpus_line LIKE ?
         """, raw_ids + (searchstr, searchstr))
     rst = cursor.fetchall()
-    [ids, lines] = zip(*rst)
-    if len(ids) > 100 and user_right < USER_RIGHT_LEVEL_ROOT:
-        await event.respond(f'❌ 包含 {text} 的语料超过 100 条 ({len(ids)})，需要 {USER_RIGHT_LEVEL_NAME[USER_RIGHT_LEVEL_ROOT]} 权限者确认重新分词。')
+    [ids, lines, weights] = zip(*rst)
+    if len(ids) > 1000 and user_right < USER_RIGHT_LEVEL_ROOT:
+        await event.respond(f'❌ 包含 {text} 的语料超过 1000 条 ({len(ids)})，需要 {USER_RIGHT_LEVEL_NAME[USER_RIGHT_LEVEL_ROOT]} 权限者确认重新分词。')
         return
-    for cur_id, cur_line in zip(ids, lines):
+    lines_to_erase = []
+    lines_to_feed = []
+    weights_to_erase = []
+    for cur_id, cur_line, cur_weight in zip(ids, lines, weights):
         new_line = ' '.join(model.cut(cur_line.replace(' ', '')))
         if new_line != cur_line:
             cursor.execute("UPDATE corpus SET corpus_line = ? WHERE corpus_id = ?", (new_line, cur_id))
+            lines_to_erase.append(cur_line)
+            lines_to_feed.append(new_line)
+            weights_to_erase.append(-1 * cur_weight)
     conn.commit()
-    await event.respond(f'✅ 已完成重新分词 {len(ids)} 条包含 {text} 的语料。')
+    model.erase(lines_to_erase, weight=weights_to_erase)
+    model.feed(lines_to_feed, weight=[-1*w for w in weights_to_erase])
+    await event.respond(f'✅ 已完成重新分词 {len(lines_to_feed)} 条包含 {text} 的语料。')
 
 @bot.on(events.NewMessage(incoming=True))
 async def reply(event):
@@ -713,11 +729,10 @@ async def erase(event):
         return
 
     user_right = get_user_right(sender_id)
-    if user_right < USER_RIGHT_LEVEL_ADMIN:
-        await event.respond(f'❌ 此操作需要 {USER_RIGHT_LEVEL_NAME[USER_RIGHT_LEVEL_ADMIN]} 权限，'
+    is_admin = (user_right >= USER_RIGHT_LEVEL_ADMIN)
+    non_admin_notice = (f'\n权限低于 {USER_RIGHT_LEVEL_NAME[USER_RIGHT_LEVEL_ADMIN]} 的用户只能移除来源为自己的句子，'
             f'您的权限是 {USER_RIGHT_LEVEL_NAME[user_right]}。\n'
-            f'如果您已成为特定群的群管，可使用 /reload 指令刷新权限。')
-        return
+            f'如果您已成为特定群的群管，可使用 /reload 指令刷新权限。') if not is_admin else ''
 
     text = await parse(event, use_reply=True)
     lines_to_erase = model.cut_lines(text)
@@ -725,13 +740,21 @@ async def erase(event):
         await event.respond('❌ 未在消息中找到要删除的句子。')
         return
 
-    cursor.execute(f"""
-        SELECT corpus_id, corpus_line, corpus_weight FROM corpus
-        WHERE corpus_line IN ({','.join('?'*len(lines_to_erase))})
-        """, lines_to_erase)
+    if is_admin:
+        cursor.execute(f"""
+            SELECT corpus_id, corpus_line, corpus_weight FROM corpus
+            WHERE corpus_line IN ({','.join('?'*len(lines_to_erase))})
+            """, lines_to_erase)
+    else:
+        # only search for lines from sender
+        cursor.execute(f"""
+            SELECT corpus_id, corpus_line, corpus_weight FROM corpus
+            WHERE corpus_user = ?
+            AND corpus_line IN ({','.join('?'*len(lines_to_erase))})
+            """, [find_user(sender_id)] + lines_to_erase)
     rst = cursor.fetchall()
     if not rst:
-        await event.respond(f'❌ 未在数据库中找到要删除的句子。')
+        await event.respond(f'❌ 未在数据库中找到要删除的句子。' + non_admin_notice)
         return
     [ids, lines, weights] = zip(*rst)
     logging.info(f'erase: {lines}, weight: {weights}')
@@ -740,11 +763,11 @@ async def erase(event):
         DELETE FROM corpus
         WHERE corpus_id IN ({','.join('?'*len(ids))})
         """, ids)
-    model.erase(lines, erase_weights)
+    model.erase(lines, weight=erase_weights)
     lines_count = cursor.rowcount
     conn.commit()
 
-    await event.respond(f'✅ 已删除 {lines_count} 个句子。')
+    await event.respond(f'✅ 已删除 {lines_count} 个句子。' + non_admin_notice)
 
     user_name = get_user_name(sender_id) or sender_id
     await log_in_chat('erase', fwd_msgs=event.message, lines='\n'.join(lines),

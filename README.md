@@ -54,7 +54,7 @@ Simply reply to the bot and it will say some random words if you have collected 
 * `/reload_config` - Reload config file without restarting the bot. Some entries cannot be dynamically reloaded though, see [config.example.py](config.example.py) for details.
 
 ### Require admin
-* `/erase` - Remove lines from corpus.
+* `/erase` - Remove lines from corpus. (Non-admins can only erase lines sent by themselves.)
 * `/userweight` - Set user weight.
 * `/ban` - Set user right to -1.
 * `/restrict` - Set user right to 1.
