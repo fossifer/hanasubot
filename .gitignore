@@ -1,0 +1,6 @@
+# config file
+config.py
+# test scripts
+maint.py
+*test.py
+
