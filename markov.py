@@ -15,6 +15,7 @@ logging.basicConfig(level=logging.INFO,
 PUNCT_TRAILING_SPACE_LIST = '.,?!:;-'
 PUNCT_LEADING_SPACE_LIST = '()[]{}-'
 PUNCT_LIST = '\'"。，？！：；‘’“”「」（）【】、・…—'
+FULL_PUNCT_LIST = PUNCT_LIST+PUNCT_TRAILING_SPACE_LIST+PUNCT_LEADING_SPACE_LIST
 ENDER_PUNCT_TRAILING_SPACE_LIST = '.?!'
 ENDER_PUNCT_LIST = '?!。？！…'
 punct_re = re.compile(f'((?:[{re.escape(PUNCT_LIST)}]|[{re.escape(PUNCT_TRAILING_SPACE_LIST)}](?: |$)+|(?: |^)+[{re.escape(PUNCT_LEADING_SPACE_LIST)}])+)')
@@ -237,12 +238,12 @@ class CorpusModel:
     def respond(self, text, tokens=None):
         if not tokens:
             tokens = self.cut(text)
-        words = [tok for tok in tokens if tok not in PUNCT_LIST]
+        words = [tok for tok in tokens if tok not in FULL_PUNCT_LIST]
         if not words:
             return ''
         keyword = random.choice(words)
         try:
             return join(self.model.make_sentence_that_contains(keyword))
-        except (IndexError, markovify.text.ParamError):
+        except (IndexError, markovify.text.ParamError, KeyError):
             return ''
 
