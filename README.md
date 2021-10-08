@@ -54,28 +54,28 @@ Simply reply to the bot and it will say some random words if you have collected 
 * `/reload_config` - Reload config file without restarting the bot. Some entries cannot be dynamically reloaded though, see [config.example.py](config.example.py) for details.
 
 ### Require admin
-* `/erase'` - Remove lines from corpus.
+* `/erase` - Remove lines from corpus.
 * `/userweight` - Set user weight.
-* `/ban'` - Set user right to -1.
-* `/restrict'` - Set user right to 1.
-* `/grantnormal'` - Set user right to 2.
-* `/granttrusted'` -Set user right to 3.
-* `/grantadmin'` - Set user right to 4.
+* `/ban` - Set user right to -1.
+* `/restrict` - Set user right to 1.
+* `/grantnormal` - Set user right to 2.
+* `/granttrusted` -Set user right to 3.
+* `/grantadmin` - Set user right to 4.
 Admins are able to add/remove other admins with above commands. See also [the user right levels section](#user-right-levels).
 
 ### Require trusted
-* `/addword_cn'` - Add a word into pkuseg user dictionary.
-* `/addword_tw'` - Add a word into CkipTagger user dictionary.
-* `/rmword_cn'` - Remove a word from pkuseg user dictionary.
-* `/rmword_tw'` - Remove a word from CkipTagger user dictionary.
+* `/addword_cn` - Add a word into pkuseg user dictionary.
+* `/addword_tw` - Add a word into CkipTagger user dictionary.
+* `/rmword_cn` - Remove a word from pkuseg user dictionary.
+* `/rmword_tw` - Remove a word from CkipTagger user dictionary.
 
 ### Other commands
-* `/clddbg'` - Test language detection of some texts.
-* `/cutdbg'` - Test tokenization of some texts.
-* `/policy'` - See what data is collected by the bot and so on.
-* `/reload'` - Claim your admin rights after you get Telegram group admin.
-* `/source'` - See the source code.
-* `/start'` - Start chatting, useful when you can't find the bot messages to reply.
+* `/clddbg` - Test language detection of some texts.
+* `/cutdbg` - Test tokenization of some texts.
+* `/policy` - See what data is collected by the bot and so on.
+* `/reload` - Claim your admin rights after you get Telegram group admin.
+* `/source` - See the source code.
+* `/start` - Start chatting, useful when you can't find the bot messages to reply.
 
 ## Database
 ### Initialize
