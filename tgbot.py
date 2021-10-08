@@ -655,19 +655,19 @@ async def reply(event):
     text = await parse(event)
     response = ''
 
-    # only say something when we are replied
-    if not event.is_reply:
-        return
-    reply_to_msg = await event.message.get_reply_message()
-    if not reply_to_msg.sender.is_self:
-        return
-
     # we handle our commands in other functions
     for cmd in COMMAND_LIST:
         if text.startswith(cmd):
             return
 
-    if chat_id > 0:
+    # only say something when we are replied in groups
+    if chat_id < 0:
+        if not event.is_reply:
+            return
+        reply_to_msg = await event.message.get_reply_message()
+        if not reply_to_msg.sender.is_self:
+            return
+    else:
         user_name = get_user_name(sender_id) or sender_id
         await log_in_chat('pm', fwd_msgs=event.message, username=user_name, userid=sender_id)
 
