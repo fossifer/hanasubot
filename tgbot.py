@@ -558,7 +558,7 @@ async def addword(event):
     for cur_id, cur_line, cur_weight in zip(ids, lines, weights):
         new_line = ' '.join(model.cut(cur_line.replace(' ', '')))
         if new_line != cur_line:
-            cursor.execute("UPDATE corpus SET corpus_line = ? WHERE corpus_id = ?", (new_line, cur_id))
+            cursor.execute("UPDATE OR IGNORE corpus SET corpus_line = ? WHERE corpus_id = ?", (new_line, cur_id))
             lines_to_erase.append(cur_line)
             lines_to_feed.append(new_line)
             weights_to_erase.append(-1 * cur_weight)
@@ -635,7 +635,7 @@ async def rmword(event):
     for cur_id, cur_line, cur_weight in zip(ids, lines, weights):
         new_line = ' '.join(model.cut(cur_line.replace(' ', '')))
         if new_line != cur_line:
-            cursor.execute("UPDATE corpus SET corpus_line = ? WHERE corpus_id = ?", (new_line, cur_id))
+            cursor.execute("UPDATE OR IGNORE corpus SET corpus_line = ? WHERE corpus_id = ?", (new_line, cur_id))
             lines_to_erase.append(cur_line)
             lines_to_feed.append(new_line)
             weights_to_erase.append(-1 * cur_weight)
