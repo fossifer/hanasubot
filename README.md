@@ -64,10 +64,9 @@ Simply reply to the bot and it will say some random words if you have collected 
 Admins are able to add/remove other admins with above commands. See also [the user right levels section](#user-right-levels).
 
 ### Require trusted
-* `/addword_cn` - Add a word into pkuseg user dictionary.
-* `/addword_tw` - Add a word into CkipTagger user dictionary.
-* `/rmword_cn` - Remove a word from pkuseg user dictionary.
-* `/rmword_tw` - Remove a word from CkipTagger user dictionary.
+* `/addword` - Add a word into user dictionary for both pkuseg and CkipTagger.
+* `/rmword` - Remove a word from user dictionary for both pkuseg and CkipTagger.
+Add `_cn` or `_tw` suffix to the commands to specify pkuseg or CkipTagger user dictionary, rather than modify both at once. Editing MeCab user dictionary requires additional work so the commands are not provided.
 
 ### Other commands
 * `/clddbg` - Test language detection of some texts.

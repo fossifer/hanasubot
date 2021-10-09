@@ -497,11 +497,11 @@ async def addword(event):
         return
 
     text = await parse(event)
-    is_cn = False
+    is_cn, is_tw = True, True
     if text.startswith('/addword_cn'):
-        is_cn = True
-    elif not text.startswith('/addword_tw'):
-        return
+        is_tw = False
+    elif text.startswith('/addword_tw'):
+        is_cn = False
 
     user_right = get_user_right(sender_id)
     if user_right < USER_RIGHT_LEVEL_TRUSTED:
@@ -522,13 +522,22 @@ async def addword(event):
     await event.respond('🕙 正在写入外部文件并重新加载模型，请稍等。')
 
     # add word into model
-    if not (model.addword_cn(text) if is_cn else model.addword_tw(text)):
-        await event.respond('❌ 添加失败，该词已存在，或未找到词典文件。')
+    if is_cn and not model.addword_cn(text):
+        await event.respond('❌ 简体字典添加失败，该词已存在，或未找到词典文件。')
+        is_cn = False
+    if is_tw and not model.addword_tw(text):
+        await event.respond('❌ 繁体字典添加失败，该词已存在。')
+        is_tw = False
+    if not is_cn and not is_tw:
         return
 
     user_name = get_user_name(sender_id) or sender_id
-    await log_in_chat('addword', fwd_msgs=event.message, username=user_name, userid=sender_id,
-        lang=('cn' if is_cn else 'tw'), chatid=chat_id, msgid=event.message.id, words=text)
+    if is_cn:
+        await log_in_chat('addword', fwd_msgs=event.message, username=user_name, userid=sender_id,
+            lang='zh-hans', chatid=chat_id, msgid=event.message.id, words=text)
+    if is_tw:
+        await log_in_chat('addword', fwd_msgs=event.message, username=user_name, userid=sender_id,
+            lang='zh-hant', chatid=chat_id, msgid=event.message.id, words=text)
 
     # re-tokenize in db and in memory
     msg = await event.respond('✅ 添加成功，将对语料库进行重新分词，可能需要一些时间，完成后将再次发送消息。')
@@ -576,11 +585,12 @@ async def rmword(event):
         return
 
     text = await parse(event)
-    is_cn = False
+    text = await parse(event)
+    is_cn, is_tw = True, True
     if text.startswith('/rmword_cn'):
-        is_cn = True
-    elif not text.startswith('/rmword_tw'):
-        return
+        is_tw = False
+    elif text.startswith('/rmword_tw'):
+        is_cn = False
 
     user_right = get_user_right(sender_id)
     if user_right < USER_RIGHT_LEVEL_TRUSTED:
@@ -601,13 +611,22 @@ async def rmword(event):
     await event.respond('🕙 正在写入外部文件并重新加载模型，请稍等。')
 
     # remove word from model
-    if not (model.rmword_cn(text) if is_cn else model.rmword_tw(text)):
-        await event.respond('❌ 删除失败，该词不存在，或未找到词典文件。')
+    if is_cn and not model.rmword_cn(text):
+        await event.respond('❌ 简体字典删除失败，该词不存在，或未找到词典文件。')
+        is_cn = False
+    if is_tw and not model.rmword_tw(text):
+        await event.respond('❌ 繁体字典删除失败，该词不存在。')
+        is_tw = False
+    if not is_cn and not is_tw:
         return
 
     user_name = get_user_name(sender_id) or sender_id
-    await log_in_chat('rmword', fwd_msgs=event.message, username=user_name, userid=sender_id,
-        lang=('cn' if is_cn else 'tw'), chatid=chat_id, msgid=event.message.id, words=text)
+    if is_cn:
+        await log_in_chat('rmword', fwd_msgs=event.message, username=user_name, userid=sender_id,
+            lang='zh-hans', chatid=chat_id, msgid=event.message.id, words=text)
+    if is_tw:
+        await log_in_chat('rmword', fwd_msgs=event.message, username=user_name, userid=sender_id,
+            lang='zh-hant', chatid=chat_id, msgid=event.message.id, words=text)
 
     # re-tokenize in db and in memory
     msg = await event.respond('✅ 删除成功，将对语料库进行重新分词，可能需要一些时间，完成后将再次发送消息。')
@@ -623,7 +642,7 @@ async def rmword(event):
         SELECT corpus_id, corpus_line, corpus_weight FROM corpus
         WHERE corpus_raw IN ({','.join('?'*len(raw_ids))})
         AND corpus_line LIKE ?
-        """, raw_ids + (searchstr, searchstr))
+        """, raw_ids + (searchstr,))
     rst = cursor.fetchall()
     [ids, lines, weights] = zip(*rst)
     if len(ids) > 1000 and user_right < USER_RIGHT_LEVEL_ROOT:
