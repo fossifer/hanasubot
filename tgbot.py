@@ -1,3 +1,4 @@
+import re
 import config
 import logging
 import sqlite3
@@ -59,6 +60,7 @@ else:
     bot = TelegramClient(config.session_name, config.api_id, config.api_hash).start(bot_token=config.bot_token)
 
 bot_name = config.bot_name
+escaped_bot_name = re.escape(bot_name)
 
 logging.info('Initializing corpus model...')
 model = CorpusModel()
@@ -225,7 +227,7 @@ async def parse(event, cmd='', use_reply=False):
 
     return text
 
-@bot.on(events.NewMessage(incoming=True, pattern=r'^/reload_config'))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/reload_config($|\s|@{escaped_bot_name})'))
 async def reload_config(event):
     global get_line_weight
 
@@ -249,7 +251,7 @@ async def reload_config(event):
 
     await event.respond('✅ 已重新载入配置文件。')
 
-@bot.on(events.NewMessage(incoming=True, pattern=rf'^/reload'))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/reload($|\s|@{escaped_bot_name})'))
 async def reload_right(event):
     if not chat_is_allowed(event.chat_id) or is_banned(event.sender_id):
         return
@@ -350,27 +352,27 @@ async def handle_set_right(event, new_right):
         chatid=chat_id, msgid=event.message.id)
     await event.respond(f'✅ [{target_tgid}](tg://user?id={target_tgid}) 的权限已从 {USER_RIGHT_LEVEL_NAME[target_right]} 变更为 {USER_RIGHT_LEVEL_NAME[new_right]}。')
 
-@bot.on(events.NewMessage(incoming=True, pattern=rf'^/ban'))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/ban($|\s|@{escaped_bot_name})'))
 async def ban(event):
     await handle_set_right(event, USER_RIGHT_LEVEL_BANNED)
 
-@bot.on(events.NewMessage(incoming=True, pattern=rf'^/restrict'))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/restrict($|\s|@{escaped_bot_name})'))
 async def restrict(event):
     await handle_set_right(event, USER_RIGHT_LEVEL_RESTRICTED)
 
-@bot.on(events.NewMessage(incoming=True, pattern=rf'^/grantnormal'))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/grantnormal($|\s|@{escaped_bot_name})'))
 async def grantnormal(event):
     await handle_set_right(event, USER_RIGHT_LEVEL_NORMAL)
 
-@bot.on(events.NewMessage(incoming=True, pattern=rf'^/granttrusted'))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/granttrusted($|\s|@{escaped_bot_name})'))
 async def granttrusted(event):
     await handle_set_right(event, USER_RIGHT_LEVEL_TRUSTED)
 
-@bot.on(events.NewMessage(incoming=True, pattern=rf'^/grantadmin'))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/grantadmin($|\s|@{escaped_bot_name})'))
 async def grantadmin(event):
     await handle_set_right(event, USER_RIGHT_LEVEL_ADMIN)
 
-@bot.on(events.NewMessage(incoming=True, pattern=rf'^/userweight'))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/userweight($|\s|@{escaped_bot_name})'))
 async def userweight(event):
     chat_id = event.chat_id
     sender_id = event.sender_id
@@ -430,7 +432,7 @@ async def userweight(event):
     await event.respond(f'✅ [{target_tgid}](tg://user?id={target_tgid}) 的权重已从 {cur_weight} 变更为 {new_weight}。\n'
         '请注意：过去由该用户输入的语料权重将**不会**改变。如有特别需要，请联系操作者。')
 
-@bot.on(events.NewMessage(incoming=True, pattern=rf'^/start'))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/start($|\s|@{escaped_bot_name})'))
 async def start(event):
     if not chat_is_allowed(event.chat_id) or is_banned(event.sender_id):
         return
@@ -441,7 +443,7 @@ async def start(event):
 
     await event.respond('我通过了你的好友验证请求，现在我们可以开始聊天了。')
 
-@bot.on(events.NewMessage(incoming=True, pattern=rf'^/policy'))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/policy($|\s|@{escaped_bot_name})'))
 async def policy(event):
     if not chat_is_allowed(event.chat_id) or is_banned(event.sender_id):
         return
@@ -453,14 +455,14 @@ async def policy(event):
         f'如需从语料库中删除句子，请联系 {USER_RIGHT_LEVEL_NAME[USER_RIGHT_LEVEL_ADMIN]} 及以上权限的用户。\n'
         '本机器人仅供测试用途，不保证今后功能不会变化。本原则的内容若发生变化亦恕不另行通知。')
 
-@bot.on(events.NewMessage(incoming=True, pattern=rf'^/source'))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/source($|\s|@{escaped_bot_name})'))
 async def source(event):
     if not chat_is_allowed(event.chat_id) or is_banned(event.sender_id):
         return
 
     await event.respond('My [source code](https://github.com/fossifer/hanasubot) is on Github. Stars are highly appreciated <3', parse_mode='md')
 
-@bot.on(events.NewMessage(incoming=True, pattern=r'^/clddbg'))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/clddbg($|\s|@{escaped_bot_name})'))
 async def clddbg(event):
     if not chat_is_allowed(event.chat_id) or is_banned(event.sender_id):
         return
@@ -474,7 +476,7 @@ async def clddbg(event):
     if response:
         await event.respond(response)
 
-@bot.on(events.NewMessage(incoming=True, pattern=r'^/cutdbg'))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/cutdbg($|\s|@{escaped_bot_name})'))
 async def cutdbg(event):
     if not chat_is_allowed(event.chat_id) or is_banned(event.sender_id):
         return
@@ -488,7 +490,7 @@ async def cutdbg(event):
     if response:
         await event.respond(response)
 
-@bot.on(events.NewMessage(incoming=True, pattern=r'^/addword'))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/addword($|\s|@{escaped_bot_name})'))
 async def addword(event):
     chat_id = event.chat_id
     sender_id = event.sender_id
@@ -576,7 +578,7 @@ async def addword(event):
     model.feed(lines_to_feed, weight=[-1*w for w in weights_to_erase])
     await event.respond(f'✅ 已完成重新分词 {len(lines_to_feed)} 条包含 {text} 的语料。')
 
-@bot.on(events.NewMessage(incoming=True, pattern=r'^/rmword'))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/rmword($|\s|@{escaped_bot_name})'))
 async def rmword(event):
     chat_id = event.chat_id
     sender_id = event.sender_id
@@ -739,7 +741,7 @@ async def reply(event):
     if response:
         await event.respond(response)
 
-@bot.on(events.NewMessage(incoming=True, pattern=r'^/erase'))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/erase($|\s|@{escaped_bot_name})'))
 async def erase(event):
     chat_id = event.chat_id
     sender_id = event.sender_id
