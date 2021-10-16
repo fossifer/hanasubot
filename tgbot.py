@@ -559,6 +559,9 @@ async def addword(event):
         AND REPLACE(corpus_line, ' ', '') LIKE ?
         """, raw_ids + (searchstr, searchstr))
     rst = cursor.fetchall()
+    if not rst:
+        await event.respond(f'✅ 没有找到需要包含 {text} 的语料，无需重新分词。')
+        return
     [ids, lines, weights] = zip(*rst)
     if len(ids) > 1000 and user_right < USER_RIGHT_LEVEL_ROOT:
         await event.respond(f'❌ 包含 {text} 的语料超过 1000 条 ({len(ids)})，需要 {USER_RIGHT_LEVEL_NAME[USER_RIGHT_LEVEL_ROOT]} 权限者确认重新分词。')
@@ -646,6 +649,9 @@ async def rmword(event):
         AND corpus_line LIKE ?
         """, raw_ids + (searchstr,))
     rst = cursor.fetchall()
+    if not rst:
+        await event.respond(f'✅ 没有找到需要包含 {text} 的语料，无需重新分词。')
+        return
     [ids, lines, weights] = zip(*rst)
     if len(ids) > 1000 and user_right < USER_RIGHT_LEVEL_ROOT:
         await event.respond(f'❌ 包含 {text} 的语料超过 1000 条 ({len(ids)})，需要 {USER_RIGHT_LEVEL_NAME[USER_RIGHT_LEVEL_ROOT]} 权限者确认重新分词。')
