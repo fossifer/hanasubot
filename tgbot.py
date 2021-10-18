@@ -761,7 +761,7 @@ async def erase(event):
             f'您的权限是 {USER_RIGHT_LEVEL_NAME[user_right]}。\n'
             f'如果您已成为特定群的群管，可使用 /reload 指令刷新权限。') if not is_admin else ''
 
-    text = await parse(event, use_reply=True)
+    text = await parse(event, cmd='/erase', use_reply=True)
     lines_to_erase = model.cut_lines(text)
     if not text or not lines_to_erase:
         await event.respond('❌ 未在消息中找到要删除的句子。')
