@@ -15,8 +15,14 @@ proxy_port = 1080
 
 # db file path
 dbfile = './mybot.db'
+STOPWORD_PATH = './stopwords.txt'  # mainly for wordcloud
 
 # The following config can be changed dynamically by using `/reload_config` command
+
+# Font used to generate wordcloud
+FONT_PATH = './PingFang.ttc'
+# The temporary image displayed before wordcloud is generated
+PLACEHOLDER_PATH = './placeholder.png'
 
 # The bot will only talk in these groups
 # Group id should be negative always, -100xxx for supergroup and -xxx for others

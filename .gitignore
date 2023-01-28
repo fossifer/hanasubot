@@ -3,4 +3,6 @@ config.py
 # test scripts
 maint.py
 *test.py
-
+test/
+# venv
+venv/

@@ -2,10 +2,12 @@ import re
 import config
 import logging
 import sqlite3
+import tempfile
 from time import mktime
 from os.path import isfile
 from importlib import reload
 from markov import CorpusModel
+from wordcloud import WordCloud
 from telethon import TelegramClient, events
 
 logging.basicConfig(level=logging.INFO,
@@ -47,6 +49,7 @@ COMMAND_LIST = (
     '/source',
     '/start',
     '/userweight',
+    '/wordcloud',
 )
 
 conn = sqlite3.connect(config.dbfile)
@@ -670,6 +673,42 @@ async def rmword(event):
     model.erase(lines_to_erase, weight=weights_to_erase)
     model.feed(lines_to_feed, weight=[-1*w for w in weights_to_erase])
     await event.respond(f'✅ 已完成重新分词 {len(lines_to_feed)} 条包含 {text} 的语料。')
+
+stopwords = set(line.strip() for line in open(config.STOPWORD_PATH))
+@bot.on(events.NewMessage(incoming=True, pattern=rf'^/wordcloud($|\s|@{escaped_bot_name})'))
+async def erase(event):
+    # TODO: parse()
+    chat_id = event.chat_id
+    sender_id = event.sender_id
+
+    if not chat_is_allowed(chat_id) or is_banned(sender_id):
+        return
+
+    user_id = find_user(sender_id)
+    if not user_id: 
+        await event.reply('我还不认识你。')
+
+    cursor.execute(f"""
+        SELECT corpus_line FROM corpus
+        WHERE corpus_user = ?
+        AND corpus_chat = ?
+        ORDER BY corpus_time DESC
+        LIMIT 500;
+    """, (user_id, find_chat(chat_id)))
+    rst = cursor.fetchall()
+    if not rst:
+        await event.reply('您水量不够多，无法生成词云。')
+        return
+    msg = await event.reply('🕙 正在生成词云，请稍等……', file=config.PLACEHOLDER_PATH)
+    lines = tuple(r[0] for r in rst)
+    text = '\n'.join(lines)
+
+    tmpfile = tempfile.NamedTemporaryFile(suffix='.png')
+    wordcloud = WordCloud(font_path=config.FONT_PATH, stopwords=stopwords, width=1024, height=768).generate(text)
+    wordcloud.to_file(tmpfile.name)
+    #await bot.send_file(chat_id, tmpfile.name, reply_to=event.id, caption=f'请查收您近期 {len(lines)} 条消息组成的词云。其中只包括{"本群" if chat_id < 0 else "该私聊中"}我收集的，即您回复给我的消息。')
+    await msg.edit(f'请查收您近期 {len(lines)} 条消息组成的词云。其中只包括{"本群" if chat_id < 0 else "该私聊中"}我收集的，即您回复给我的消息。', file=tmpfile.name)
+    tmpfile.close()
 
 @bot.on(events.NewMessage(incoming=True))
 async def reply(event):
