@@ -19,6 +19,10 @@ STOPWORD_PATH = './stopwords.txt'  # mainly for wordcloud
 
 # The following config can be changed dynamically by using `/reload_config` command
 
+# Limit the max length of response the bot can generate
+# For no limit, set this to 0 or negative
+MAX_MSG_LEN = 512
+
 # Font used to generate wordcloud
 FONT_PATH = './PingFang.ttc'
 # The temporary image displayed before wordcloud is generated

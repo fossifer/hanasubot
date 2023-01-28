@@ -674,7 +674,7 @@ async def rmword(event):
     model.feed(lines_to_feed, weight=[-1*w for w in weights_to_erase])
     await event.respond(f'✅ 已完成重新分词 {len(lines_to_feed)} 条包含 {text} 的语料。')
 
-stopwords = set(line.strip() for line in open(config.STOPWORD_PATH))
+stopwords = set(line.strip() for line in open(config.STOPWORD_PATH)) if hasattr(config, 'STOPWORD_PATH') else set()
 @bot.on(events.NewMessage(incoming=True, pattern=rf'^/wordcloud($|\s|@{escaped_bot_name})'))
 async def erase(event):
     # TODO: parse()
@@ -784,7 +784,10 @@ async def reply(event):
         response = model.generate()
 
     if response:
-        await event.respond(response)
+        if hasattr(config, 'MAX_MSG_LEN') and config.MAX_MSG_LEN > 0:
+            await event.respond(response[:config.MAX_MSG_LEN])
+        else:
+            await event.respond(response)
 
 @bot.on(events.NewMessage(incoming=True, pattern=rf'^/erase($|\s|@{escaped_bot_name})'))
 async def erase(event):
