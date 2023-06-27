@@ -704,7 +704,7 @@ async def erase(event):
     text = '\n'.join(lines)
 
     tmpfile = tempfile.NamedTemporaryFile(suffix='.png')
-    wordcloud = WordCloud(font_path=config.FONT_PATH, stopwords=stopwords, width=1024, height=768).generate(text)
+    wordcloud = WordCloud(font_path=config.FONT_PATH, stopwords=stopwords, width=1024, height=768, background_color='white').generate(text)
     wordcloud.to_file(tmpfile.name)
     #await bot.send_file(chat_id, tmpfile.name, reply_to=event.id, caption=f'请查收您近期 {len(lines)} 条消息组成的词云。其中只包括{"本群" if chat_id < 0 else "该私聊中"}我收集的，即您回复给我的消息。')
     await msg.edit(f'请查收您近期 {len(lines)} 条消息组成的词云。其中只包括{"本群" if chat_id < 0 else "该私聊中"}我收集的，即您回复给我的消息。', file=tmpfile.name)
