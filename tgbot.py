@@ -167,7 +167,7 @@ LOG_TEMPLATES = {
     'rmword': '[{userid}](tg://user?id={userid}) ({username}) removed the following word(s) for {lang} in [{chatid}](https://t.me/c/{chatid}/{msgid}):\n{words}',
 }
 
-MENTION_RE = r'@(\S)'
+MENTION_RE = re.compile(r'@(\S)')
 
 async def log_in_chat(log_type, fwd_msgs=None, **kwargs):
     '''
