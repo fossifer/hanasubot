@@ -167,6 +167,8 @@ LOG_TEMPLATES = {
     'rmword': '[{userid}](tg://user?id={userid}) ({username}) removed the following word(s) for {lang} in [{chatid}](https://t.me/c/{chatid}/{msgid}):\n{words}',
 }
 
+MENTION_RE = r'@(\S)'
+
 async def log_in_chat(log_type, fwd_msgs=None, **kwargs):
     '''
     log_type: pm, erase, right, userweight, lineweight, addword
@@ -784,6 +786,8 @@ async def reply(event):
         response = model.generate()
 
     if response:
+        # Add a space after @ to avoid pings
+        response = MENTION_RE.sub(r'@ \1', response)
         if hasattr(config, 'MAX_MSG_LEN') and config.MAX_MSG_LEN > 0:
             await event.respond(response[:config.MAX_MSG_LEN])
         else:
